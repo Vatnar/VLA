@@ -1,6 +1,7 @@
 #pragma once
 
-#include "VLA/Vector.h"
+#include "VLA/Matrix.hpp"
+#include "VLA/Vector.hpp"
 namespace VLA {
 
 void hello();

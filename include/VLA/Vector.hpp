@@ -32,6 +32,9 @@ struct Vector {
     return result;
   }
 
+  constexpr T& operator[](std::size_t idx) { return v[idx]; }
+  constexpr const T& operator[](std::size_t idx) const { return v[idx]; }
+
   constexpr friend std::ostream& operator<<(std::ostream& os, const Vector& v) {
     os << std::string("[ ");
     for (int i = 0; i < N; i++) {

@@ -3,12 +3,14 @@ project(VLA)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(VLA STATIC src/VLA.cpp)
+add_library(VLA STATIC src/VLA.cpp src/Vector.cpp src/Matrix.cpp)
 target_include_directories(VLA PUBLIC include)
 
 
 # during dev
 add_executable(test src/test.cpp
-        include/VLA/Vector.h
-        src/Vector.cpp)
+        include/VLA/Vector.hpp
+        src/Vector.cpp
+        include/VLA/Matrix.hpp
+        src/Matrix.cpp)
 target_link_libraries(test PRIVATE VLA)

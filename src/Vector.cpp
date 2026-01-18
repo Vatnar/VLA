@@ -1,4 +1,4 @@
-#include "VLA/Vector.h"
+#include "VLA/Vector.hpp"
 
 namespace VLA {
 template class Vector<float, 4>;
