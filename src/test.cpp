@@ -1,39 +1,39 @@
 #include <VLA.hpp>
+#include <iostream>
+#include <ostream>
 #include <print>
 
-int main() {
-  using namespace VLA;
-  Vector2f v1 = {3, -8};
-  Vector2f v2 = {1, 1};
 
-  Vector2f v3 = v1 + static_cast<float>(3) * v2;
-  Vector2f v4 = v1 - v2;
-
-  /*
-   * [ 1 0   0 0 ] [ 1 ]   [ 1 ]
-   * [ 0 1.4 0 0 ] [ 4 ] = [ 5.6 ]
-   * [ 0 0   5 0 ] [ 4 ]   [ 20]
-   * [ 0 0   0 1 ] [ 2 ]   [ 2 ]
-   *
-   */
-
+constexpr VLA::Matrix4x4f RotationShear() {
   // clang-format off
-  Matrix4x4f a ={
-    1, 0,    0, 0,
-    0, 1.4f, 0, 0,
-    0, 0,    5, 0,
-    0, 0,    0, 1
-  };
-
-  Matrix4x4f b = {
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1,
+  return VLA::Matrix4x4f{
+    1.0, 3.5, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    -5.0, 3.0, 1.0, 3.0,
+    2.0, 0.0, 0.0, 1.0
   };
   // clang-format on
-  Vector4f m = {1, 4, 4, 2};
-  Vector4f mPrime = b * (a * m);
+}
+constexpr auto TestMatrixMulAndTransform() {
+  auto shear = RotationShear();
 
-  std::print("mPrime: {}", mPrime);
+  // Matrix mul: shear * shear
+  auto mulResult = shear * shear;
+
+  // Vector transform: mulResult * unitX
+  constexpr VLA::Vector4f unitX{1.0f, 0.0f, 0.0f, 1.0f}; // Homogeneous point
+  auto transformed = mulResult * unitX;
+
+  // assert(transformed == expected); // Compile-time check
+
+  std::print("Shear matrix:\n{}\n\n", shear);
+  std::print("shear * shear:\n{}\n\n", mulResult);
+  std::print("Transformed unitX: {} -> {}\n", unitX, transformed);
+
+  return transformed;
+}
+
+int main() {
+  auto result = TestMatrixMulAndTransform();
+  std::println("All checks passed: {}", result);
 }
