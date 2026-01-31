@@ -6,11 +6,16 @@ set(CMAKE_CXX_STANDARD 23)
 add_library(VLA STATIC src/VLA.cpp src/Vector.cpp src/Matrix.cpp)
 target_include_directories(VLA PUBLIC include)
 
+enable_testing()
 
-# during dev
-add_executable(test src/test.cpp
-        include/VLA/Vector.hpp
-        src/Vector.cpp
-        include/VLA/Matrix.hpp
-        src/Matrix.cpp)
-target_link_libraries(test PRIVATE VLA)
+add_executable(vla_tests
+        tests/test_main.cpp
+        tests/matrix_tests.cpp
+)
+
+target_include_directories(vla_tests PRIVATE
+        include
+        vendor
+)
+target_link_libraries(vla_tests VLA)
+add_test(NAME vla_tests COMMAND vla_tests)

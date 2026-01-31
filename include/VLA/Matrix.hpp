@@ -10,23 +10,30 @@
 // to cache efficiency.
 namespace VLA {
 
+/**
+ * Row-major matrix, can be transposed into column-major
+ * @tparam T Primitive type
+ * @tparam M Row count
+ * @tparam N Column count
+ */
 template<typename T, std::size_t M, std::size_t N>
 struct Matrix {
-  T A[M * N];
+  // STUDY: STD::ARRAY
+  std::array<T, M * N> A;
 
 
   // ranges
   using iterator = T*;
   using const_iterator = const T*;
-  constexpr iterator begin() noexcept { return A; }
+  constexpr iterator begin() noexcept { return A.data(); }
   // NOTE: end() should point to one past the last element
-  constexpr iterator end() noexcept { return A + M * N; }
-  [[nodiscard]] constexpr const_iterator begin() const noexcept { return A; }
+  constexpr iterator end() noexcept { return A.data() + M * N; }
+  [[nodiscard]] constexpr const_iterator begin() const noexcept { return A.data(); }
   // NOTE: end() should point to one past the last element
-  [[nodiscard]] constexpr const_iterator end() const noexcept { return A + M * N; }
+  [[nodiscard]] constexpr const_iterator end() const noexcept { return A.data() + M * N; }
 
 
-  [[nodiscard]] constexpr Vector<T, M> Row(const std::size_t index) const {
+  [[nodiscard]] constexpr Vector<T, N> Row(const std::size_t index) const {
     const auto rowCount = M;
     const auto colCount = N;
     assert(index < rowCount && "Row index specified cannot be higher than the amount of rows.");
@@ -39,7 +46,7 @@ struct Matrix {
     return result;
   }
 
-  [[nodiscard]] constexpr Vector<T, N> Column(std::size_t index) const {
+  [[nodiscard]] constexpr Vector<T, M> Column(const std::size_t index) const {
     const auto rowCount = M;
     const auto colCount = N;
     assert(index < colCount &&
@@ -51,6 +58,36 @@ struct Matrix {
     }
     return result;
   }
+
+  [[nodiscard]] constexpr Matrix<T, N, M> Transposed() const {
+    Matrix<T, N, M> out{};
+
+    for (std::size_t r = 0; r < M; ++r) {
+      for (std::size_t c = 0; c < N; ++c) {
+        out.A[c * M + r] = A[r * N + c];
+      }
+    }
+    return out;
+  }
+
+  // NOTE: Was thinking about implementing determinants, however they are not really that useful.
+  // Rather implement echelon operations for reducing matrices into identity matrix to find inverse.
+  // Or to triangular matrices for determinants, which i presume might be faster since it doesnt
+  // require recursion.
+
+  [[nodiscard]] constexpr T Determinant() const {
+    // TODO: row reduce until triangular.    //  then calculate determinant.
+
+    // no need for this yet.
+    return {};
+  }
+
+  // TODO: General determinant calculation for N x M matrix
+  // STUDY: https://en.wikipedia.org/wiki/Leibniz_formula_for_determinants
+  //  https://en.wikipedia.org/wiki/Determinant
+
+  [[nodiscard]] constexpr std::array<T, M * N> ToRowMajor() const { return Transposed().A; }
+
   // operator overloads
 
 
@@ -58,7 +95,7 @@ struct Matrix {
   constexpr const T& operator[](std::size_t idx) const { return A[idx]; }
 
   template<std::size_t R>
-  constexpr Matrix<T, M, R> operator*(const Matrix<T, N, R> right) {
+  constexpr Matrix<T, M, R> operator*(const Matrix<T, N, R> right) const {
     const auto rowCount = M;
     const auto colCount = R;
 
@@ -74,7 +111,7 @@ struct Matrix {
   }
 
 
-  constexpr Vector<T, M> operator*(const Vector<T, N> v) {
+  constexpr Vector<T, M> operator*(const Vector<T, N> v) const {
     Vector<T, M> result{};
 
     const std::size_t stride = N;
@@ -96,12 +133,6 @@ struct Matrix {
   }
 
 
-  // TODO: General determinant calculation for N x M matrix
-  // STUDY: https://en.wikipedia.org/wiki/Leibniz_formula_for_determinants
-  //  https://en.wikipedia.org/wiki/Determinant
-
-
-  // NOTE: Printing dingsboms
   constexpr friend std::ostream& operator<<(std::ostream& os, const Matrix& a) {
     const auto colCount = N;
 
@@ -141,3 +172,17 @@ struct formatter<VLA::Matrix<T, M, N>, char> {
   }
 };
 } // namespace std
+
+
+constexpr VLA::Matrix4x4f RotationShear() {
+  // clang-format off
+  return VLA::Matrix4x4f{
+    1.0, 3.5, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    -5.0, 3.0, 1.0, 3.0,
+    2.0, 0.0, 0.0, 1.0
+  };
+  // clang-format on
+}
+
+// NOTE: TESTS
