@@ -88,6 +88,7 @@ struct Matrix {
 
   [[nodiscard]] constexpr std::array<T, M * N> ToRowMajor() const { return Transposed().A; }
 
+  constexpr bool operator==(const Matrix& other) const { return A == other.A; }
   // operator overloads
 
 
@@ -142,6 +143,16 @@ struct Matrix {
     }
     return os;
   }
+  constexpr T& operator()(size_t row, size_t col) { return A[row * M + col]; }
+  constexpr const T& operator()(size_t row, size_t col) const { return A[row * N + col]; }
+
+  static inline constexpr Matrix Identity = [] {
+    Matrix m{};
+    for (size_t i = 0; i < std::min(M, N); ++i) {
+      m(i, i) = T(1);
+    }
+    return m;
+  }();
 };
 
 template<class T, std::size_t M, std::size_t N>
@@ -154,23 +165,30 @@ using Matrix4x4f = Matrix<float, 4, 4>;
 
 } // namespace VLA
 
-
 namespace std {
-template<typename T, size_t M, size_t N>
-struct formatter<VLA::Matrix<T, M, N>, char> {
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
-  template<typename FormatContext>
-  auto format(const VLA::Matrix<T, M, N>& mat, FormatContext& ctx) const {
-    auto out = ctx.out();
-    for (std::size_t i = 0; i < M; ++i) {
-      out = std::format_to(out, "{}", mat.Row(i));
-      if (i + 1 < M)
-        *out++ = '\n';
-    }
-    return out;
+template<>
+struct formatter<VLA::Matrix4x4f, char> : formatter<std::string_view, char> {
+  using base = formatter<std::string_view, char>;
+
+  constexpr auto parse(std::format_parse_context& ctx) {
+    return base::parse(ctx); // enables {:<30}, {:^30}, etc.
+  }
+
+  auto format(const VLA::Matrix4x4f& m, std::format_context& ctx) const {
+    // Example: translation only (adjust for your matrix convention)
+    const auto t = m.Column(3);
+
+    std::array<char, 64> buf{};
+    auto it =
+        std::format_to_n(buf.begin(), buf.size() - 1, "T({:.2f},{:.2f},{:.2f})", t[0], t[1], t[2])
+            .out;
+    std::string_view sv{buf.data(), static_cast<size_t>(it - buf.begin())};
+
+    return base::format(sv, ctx); // applies the outer field width/alignment
   }
 };
+
 } // namespace std
 
 
