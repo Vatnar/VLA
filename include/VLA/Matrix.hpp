@@ -33,12 +33,55 @@ struct Matrix {
   [[nodiscard]] constexpr const_iterator end() const noexcept { return A.data() + M * N; }
 
 
+  struct RowProxy {
+    Matrix& mat;
+    std::size_t index;
+    constexpr operator Vector<T, N>() const {
+      Vector<T, N> out{};
+      for (std::size_t i = 0; i < N; ++i)
+        out[i] = mat(index, i);
+      return out;
+    }
+    constexpr RowProxy& operator=(const Vector<T, N>& v) {
+      for (std::size_t i = 0; i < N; ++i)
+        mat(index, i) = v[i];
+      return *this;
+    }
+    constexpr RowProxy& operator=(std::initializer_list<T> list) {
+      std::size_t i = 0;
+      for (auto v : list)
+        mat(index, i++) = v;
+      return *this;
+    }
+  };
+
+  struct ColumnProxy {
+    Matrix& mat;
+    std::size_t index;
+    constexpr operator Vector<T, M>() const {
+      Vector<T, M> out{};
+      for (std::size_t i = 0; i < M; ++i)
+        out[i] = mat(i, index);
+      return out;
+    }
+    constexpr ColumnProxy& operator=(const Vector<T, M>& v) {
+      for (std::size_t i = 0; i < M; ++i)
+        mat(i, index) = v[i];
+      return *this;
+    }
+    constexpr ColumnProxy& operator=(std::initializer_list<T> list) {
+      std::size_t i = 0;
+      for (auto v : list)
+        mat(i++, index) = v;
+      return *this;
+    }
+  };
+
   [[nodiscard]] constexpr Vector<T, N> Row(const std::size_t index) const {
     const auto rowCount = M;
     const auto colCount = N;
     assert(index < rowCount && "Row index specified cannot be higher than the amount of rows.");
     Vector<T, N> result{};
-
 
     for (std::size_t i{0}; i < colCount; i++) {
       result[i] = A[index * colCount + i];
@@ -46,17 +89,28 @@ struct Matrix {
     return result;
   }
 
+  [[nodiscard]] constexpr RowProxy Row(const std::size_t index) {
+    assert(index < M);
+
+    return {*this, index};
+  }
+
   [[nodiscard]] constexpr Vector<T, M> Column(const std::size_t index) const {
-    const auto rowCount = M;
     const auto colCount = N;
     assert(index < colCount &&
            "Column index specified cannot be higher than the amount of columns");
     Vector<T, M> result{};
 
-    for (std::size_t i{0}; i < rowCount; i++) {
+    for (std::size_t i{0}; i < M; i++) {
       result[i] = A[index + i * colCount];
     }
     return result;
+  }
+
+  // BUG: Corrupts heap
+  [[nodiscard]] constexpr ColumnProxy Column(const std::size_t index) {
+    assert(index < N);
+    return {*this, index};
   }
 
   [[nodiscard]] constexpr Matrix<T, N, M> Transposed() const {
@@ -112,14 +166,14 @@ struct Matrix {
   }
 
 
-  constexpr Vector<T, M> operator*(const Vector<T, N> v) const {
+  constexpr Vector<T, M> operator*(const Vector<T, N>& v) const {
     Vector<T, M> result{};
 
     const std::size_t stride = N;
 
-    for (std::size_t col{0}; col < N; col++) {
-      for (std::size_t row{0}; row < M; row++) {
-        result[row] += v[row] * A[col + row * stride];
+    for (std::size_t row{0}; row < M; row++) {
+      for (std::size_t col{0}; col < N; col++) {
+        result[row] += v[col] * A[col + row * stride];
       }
     }
 
@@ -143,7 +197,7 @@ struct Matrix {
     }
     return os;
   }
-  constexpr T& operator()(size_t row, size_t col) { return A[row * M + col]; }
+  constexpr T& operator()(size_t row, size_t col) { return A[row * N + col]; }
   constexpr const T& operator()(size_t row, size_t col) const { return A[row * N + col]; }
 
   static inline constexpr Matrix Identity = [] {
@@ -153,6 +207,30 @@ struct Matrix {
     }
     return m;
   }();
+
+  static constexpr Matrix Ortho(T left, T right, T bottom, T top, T near, T far) {
+    Matrix m = Identity;
+    m(0, 0) = T(2) / (right - left);
+    m(1, 1) =
+        T(2) / (top - bottom); // Standard Ortho, Y-flip handled by caller or viewport if needed
+    m(2, 2) = T(1) / (far - near);
+    m(0, 3) = -(right + left) / (right - left);
+    m(1, 3) = -(top + bottom) / (top - bottom);
+    m(2, 3) = -near / (far - near);
+    return m;
+  }
+
+  static constexpr Matrix Perspective(T fovY, T aspect, T near, T far) {
+    T focalLength = T(1) / std::tan(fovY / T(2));
+    Matrix m{};
+    m(0, 0) = focalLength / aspect;
+    m(1, 1) = -focalLength; // Vulkan Y-down flip
+    m(2, 2) = far / (far - near);
+    m(2, 3) = -(far * near) / (far - near);
+    m(3, 2) = T(1);
+    m(3, 3) = T(0);
+    return m;
+  }
 };
 
 template<class T, std::size_t M, std::size_t N>
