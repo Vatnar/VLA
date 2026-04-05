@@ -8,17 +8,15 @@ target_include_directories(VLA PUBLIC include)
 
 enable_testing()
 
-add_executable(vla_tests
-        tests/main.cpp
-        tests/matrix_tests.cpp
-)
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/*.cpp")
+add_executable(VLAGTest ${TEST_SOURCES})
 
-target_include_directories(vla_tests PRIVATE
+target_include_directories(VLAGTest PRIVATE
         include
         ${GTEST_INCLUDE_DIRS}
 )
-target_link_libraries(vla_tests PRIVATE
+target_link_libraries(VLAGTest PRIVATE
         VLA
         GTest::gtest
 )
-add_test(NAME vla_tests COMMAND vla_tests)
+add_test(NAME VLAGTest COMMAND VLAGTest)
