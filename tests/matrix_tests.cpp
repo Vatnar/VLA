@@ -250,12 +250,12 @@ TEST(MatrixTest, Transpose_4x4) {
   auto at = a.Transposed();
 
   EXPECT_EQ(at.A[0], 1);
-  EXPECT_EQ(at.A[1], 5);
-  EXPECT_EQ(at.A[2], 2);
-  EXPECT_EQ(at.A[3], 6);
-  EXPECT_EQ(at.A[4], 3);
-  EXPECT_EQ(at.A[5], 7);
-  EXPECT_EQ(at.A[6], 4);
+  EXPECT_EQ(at.A[1], 3);
+  EXPECT_EQ(at.A[2], 5);
+  EXPECT_EQ(at.A[3], 7);
+  EXPECT_EQ(at.A[4], 2);
+  EXPECT_EQ(at.A[5], 4);
+  EXPECT_EQ(at.A[6], 6);
   EXPECT_EQ(at.A[7], 8);
 }
 
