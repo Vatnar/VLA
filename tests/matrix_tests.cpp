@@ -163,3 +163,107 @@ TEST(MatrixTest, Iterators_BeginEndSpanAllElements) {
   const int sum_it = std::accumulate(a.begin(), a.end(), 0);
   EXPECT_EQ(sum_it, 21);
 }
+
+TEST(MatrixTest, AccessOperator_IndexAccess) {
+  using VLA::Matrix;
+  Matrix<int, 2, 3> a{std::array<int, 6>{1, 2, 3, 4, 5, 6}};
+
+  EXPECT_EQ(a[0], 1);
+  EXPECT_EQ(a[5], 6);
+
+  a[0] = 100;
+  EXPECT_EQ(a[0], 100);
+}
+
+TEST(MatrixTest, DifferentSizes_3x4Matrix) {
+  using VLA::Matrix;
+  Matrix<int, 3, 4> m{std::array<int, 12>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+
+  EXPECT_EQ(m.A.size(), 12u);
+  EXPECT_EQ(m[0], 1);
+  EXPECT_EQ(m[11], 12);
+}
+
+TEST(MatrixTest, DifferentSizes_4x4Matrix) {
+  using VLA::Matrix;
+  Matrix<int, 4, 4> m{};
+  m[0] = 1; m[5] = 1; m[10] = 1; m[15] = 1;
+
+  EXPECT_EQ(m[0], 1);
+  EXPECT_EQ(m[5], 1);
+  EXPECT_EQ(m[10], 1);
+  EXPECT_EQ(m[15], 1);
+}
+
+TEST(MatrixTest, Equality_SameMatrices) {
+  using VLA::Matrix;
+  Matrix<int, 2, 2> a{std::array<int, 4>{1, 2, 3, 4}};
+  Matrix<int, 2, 2> b{std::array<int, 4>{1, 2, 3, 4}};
+  Matrix<int, 2, 2> c{std::array<int, 4>{1, 2, 3, 5}};
+
+  EXPECT_EQ(a, b);
+  EXPECT_NE(a, c);
+}
+
+TEST(MatrixTest, ScalarMultiply_ZeroScalar) {
+  using VLA::Matrix;
+  Matrix<int, 2, 2> a{std::array<int, 4>{1, 2, 3, 4}};
+  Matrix<int, 2, 2> b = a * 0;
+
+  EXPECT_EQ(b.A[0], 0);
+  EXPECT_EQ(b.A[3], 0);
+}
+
+TEST(MatrixTest, ScalarMultiply_NegativeScalar) {
+  using VLA::Matrix;
+  Matrix<int, 2, 2> a{std::array<int, 4>{1, 2, 3, 4}};
+  Matrix<int, 2, 2> b = a * -1;
+
+  EXPECT_EQ(b.A[0], -1);
+  EXPECT_EQ(b.A[3], -4);
+}
+
+TEST(MatrixTest, MatrixMultiply_3x3Identity) {
+  using VLA::Matrix;
+  Matrix<int, 3, 3> I{std::array<int, 9>{1, 0, 0, 0, 1, 0, 0, 0, 1}};
+  Matrix<int, 3, 3> A{std::array<int, 9>{2, 3, 4, 5, 6, 7, 8, 9, 10}};
+
+  auto result = I * A;
+  EXPECT_EQ(result.A, A.A);
+}
+
+TEST(MatrixTest, MatrixMultiply_3x3With3x1) {
+  using VLA::Matrix;
+  using VLA::Vector;
+  Matrix<int, 3, 3> A{std::array<int, 9>{1, 0, 0, 0, 1, 0, 0, 0, 1}};
+  Vector<int, 3> v{1, 2, 3};
+
+  auto result = A * v;
+  EXPECT_EQ(result[0], 1);
+  EXPECT_EQ(result[1], 2);
+  EXPECT_EQ(result[2], 3);
+}
+
+TEST(MatrixTest, Transpose_4x4) {
+  using VLA::Matrix;
+  Matrix<int, 4, 2> a{std::array<int, 8>{1, 2, 3, 4, 5, 6, 7, 8}};
+  auto at = a.Transposed();
+
+  EXPECT_EQ(at.A[0], 1);
+  EXPECT_EQ(at.A[1], 5);
+  EXPECT_EQ(at.A[2], 2);
+  EXPECT_EQ(at.A[3], 6);
+  EXPECT_EQ(at.A[4], 3);
+  EXPECT_EQ(at.A[5], 7);
+  EXPECT_EQ(at.A[6], 4);
+  EXPECT_EQ(at.A[7], 8);
+}
+
+TEST(MatrixTest, ToRowMajor) {
+  using VLA::Matrix;
+  Matrix<int, 2, 3> a{std::array<int, 6>{1, 2, 3, 4, 5, 6}};
+  auto rowMajor = a.ToRowMajor();
+
+  Matrix<int, 3, 2> expected{std::array<int, 6>{1, 4, 2, 5, 3, 6}};
+  EXPECT_EQ(rowMajor, expected.A);
+}
