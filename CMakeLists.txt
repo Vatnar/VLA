@@ -9,13 +9,16 @@ target_include_directories(VLA PUBLIC include)
 enable_testing()
 
 add_executable(vla_tests
-        tests/test_main.cpp
         tests/matrix_tests.cpp
 )
 
 target_include_directories(vla_tests PRIVATE
         include
-        vendor
+        ${GTEST_INCLUDE_DIRS}
 )
-target_link_libraries(vla_tests VLA)
+target_link_libraries(vla_tests PRIVATE
+        VLA
+        GTest::gtest
+        GTest::gtest_main
+)
 add_test(NAME vla_tests COMMAND vla_tests)
