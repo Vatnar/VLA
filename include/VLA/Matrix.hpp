@@ -78,7 +78,7 @@ struct Matrix {
   };
 
   [[nodiscard]] constexpr Vector<T, N> Row(const std::size_t index) const {
-    const auto rowCount = M;
+    [[maybe_unused]] const auto rowCount = M;
     const auto colCount = N;
     assert(index < rowCount && "Row index specified cannot be higher than the amount of rows.");
     Vector<T, N> result{};

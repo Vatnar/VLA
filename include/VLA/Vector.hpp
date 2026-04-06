@@ -37,7 +37,7 @@ struct Vector {
   }
   bool operator==(const Vector& vector) const = default;
   static constexpr T Dot(const Vector& v1, const Vector& v2) {
-    T result;
+    T result{};
     for (std::size_t i{0}; i < N; i++) {
       result += v1[i] * v2[i];
     }
