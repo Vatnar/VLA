@@ -1,6 +1,6 @@
 # VLA
 
-
+[![License](https://img.shields.io/github/license/vatnar/VLA)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-gh--pages-blue)](https://sd.vatnar.dev/libraries/vla/VLA) 
 
 # Quickstart
