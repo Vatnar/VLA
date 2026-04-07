@@ -1,7 +1,7 @@
 # VLA
 
 [![License: PolyForm Shield](https://img.shields.io/badge/License-PolyForm%20Shield%201.0.0-5D6D7E)](https://polyformproject.org/licenses/shield/1.0.0)
-[![Docs](https://img.shields.io/badge/docs-gh--pages-blue)](http://sd.vatnar.dev/design/libraries/vla/VLA) 
+[![Docs](https://img.shields.io/badge/docs-gh--pages-blue)](https://sd.vatnar.dev/libraries/vla/VLA) 
 
 # Quickstart
 ### Using CMake and git submodules (recommended)
