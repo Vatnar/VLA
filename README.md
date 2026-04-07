@@ -1,6 +1,6 @@
 # VLA
 
-![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)
+
 [![Docs](https://img.shields.io/badge/docs-gh--pages-blue)](https://sd.vatnar.dev/libraries/vla/VLA) 
 
 # Quickstart
