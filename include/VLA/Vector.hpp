@@ -88,13 +88,13 @@ using Vector3 = Vector<T, 3>;
 template<typename T>
 using Vector2 = Vector<T, 2>;
 
-extern template class Vector<float, 4>;
-extern template class Vector<float, 3>;
-extern template class Vector<float, 2>;
+extern template struct Vector<float, 4>;
+extern template struct Vector<float, 3>;
+extern template struct Vector<float, 2>;
 
-extern template class Vector<int, 4>;
-extern template class Vector<int, 3>;
-extern template class Vector<int, 2>;
+extern template struct Vector<int, 4>;
+extern template struct Vector<int, 3>;
+extern template struct Vector<int, 2>;
 
 using Vector4f = Vector4<float>;
 using Vector3f = Vector3<float>;

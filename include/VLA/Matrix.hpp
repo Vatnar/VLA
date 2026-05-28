@@ -200,16 +200,16 @@ struct Matrix {
   constexpr T& operator()(size_t row, size_t col) { return A[row * N + col]; }
   constexpr const T& operator()(size_t row, size_t col) const { return A[row * N + col]; }
 
-  static inline constexpr Matrix Identity = [] {
+  [[nodiscard]] static constexpr Matrix Identity() {
     Matrix m{};
     for (size_t i = 0; i < std::min(M, N); ++i) {
       m(i, i) = T(1);
     }
     return m;
-  }();
+  }
 
   static constexpr Matrix Ortho(T left, T right, T bottom, T top, T near, T far) {
-    Matrix m = Identity;
+    Matrix m = Identity();
     m(0, 0) = T(2) / (right - left);
     m(1, 1) =
         T(2) / (top - bottom); // Standard Ortho, Y-flip handled by caller or viewport if needed
@@ -238,7 +238,7 @@ constexpr Matrix<T, M, N> operator*(const T& scalar, const Matrix<T, M, N>& a) {
   return a * scalar;
 }
 
-extern template class Matrix<float, 4, 4>;
+extern template struct Matrix<float, 4, 4>;
 using Matrix4x4f = Matrix<float, 4, 4>;
 
 } // namespace VLA
