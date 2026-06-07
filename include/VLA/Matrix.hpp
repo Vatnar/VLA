@@ -6,12 +6,14 @@
 #include <ranges>
 
 
-// TODO: Change to use column-major instead to interact natively with Vulkan without transposing due
-// to cache efficiency.
+// TODO: Core transforms:
+//  translation, rotation, scaling, view(camera), projection
+
+// Column-major to interact natively with Vulkan without transposing.
 namespace VLA {
 
 /**
- * Row-major matrix, can be transposed into column-major
+ * Column-major matrix
  * @tparam T Primitive type
  * @tparam M Row count
  * @tparam N Column count
@@ -31,6 +33,18 @@ struct Matrix {
   [[nodiscard]] constexpr const_iterator begin() const noexcept { return A.data(); }
   // NOTE: end() should point to one past the last element
   [[nodiscard]] constexpr const_iterator end() const noexcept { return A.data() + M * N; }
+  [[nodiscard]] constexpr Matrix operator+(const Matrix& rhs) const {
+    Matrix result{*this};
+    result += rhs;
+    return result;
+  }
+
+  constexpr Matrix& operator+=(const Matrix& rhs) {
+    for (std::size_t i = 0; i < M * N; ++i) {
+      A[i] += rhs.A[i];
+    }
+    return *this;
+  }
 
 
   struct RowProxy {
@@ -77,38 +91,34 @@ struct Matrix {
     }
   };
 
-  [[nodiscard]] constexpr Vector<T, N> Row(const std::size_t index) const {
-    [[maybe_unused]] const auto rowCount = M;
-    const auto colCount = N;
-    assert(index < rowCount && "Row index specified cannot be higher than the amount of rows.");
+  [[nodiscard]] constexpr Vector<T, N> Row(const std::size_t index) const& {
+    assert(index < M && "Row index specified cannot be higher than the amount of rows.");
     Vector<T, N> result{};
 
-    for (std::size_t i{0}; i < colCount; i++) {
-      result[i] = A[index * colCount + i];
+    for (std::size_t i{0}; i < N; i++) {
+      result[i] = A[i * M + index];
     }
     return result;
   }
 
-  [[nodiscard]] constexpr RowProxy Row(const std::size_t index) {
+  [[nodiscard]] constexpr RowProxy Row(const std::size_t index) & {
     assert(index < M);
 
     return {*this, index};
   }
 
-  [[nodiscard]] constexpr Vector<T, M> Column(const std::size_t index) const {
-    const auto colCount = N;
-    assert(index < colCount &&
+  [[nodiscard]] constexpr Vector<T, M> Column(const std::size_t index) const& {
+    assert(index < N &&
            "Column index specified cannot be higher than the amount of columns");
     Vector<T, M> result{};
 
     for (std::size_t i{0}; i < M; i++) {
-      result[i] = A[index + i * colCount];
+      result[i] = A[index * M + i];
     }
     return result;
   }
 
-  // BUG: Corrupts heap
-  [[nodiscard]] constexpr ColumnProxy Column(const std::size_t index) {
+  [[nodiscard]] constexpr ColumnProxy Column(const std::size_t index) & {
     assert(index < N);
     return {*this, index};
   }
@@ -118,7 +128,7 @@ struct Matrix {
 
     for (std::size_t r = 0; r < M; ++r) {
       for (std::size_t c = 0; c < N; ++c) {
-        out.A[c * M + r] = A[r * N + c];
+        out.A[r * N + c] = A[c * M + r];
       }
     }
     return out;
@@ -140,8 +150,6 @@ struct Matrix {
   // STUDY: https://en.wikipedia.org/wiki/Leibniz_formula_for_determinants
   //  https://en.wikipedia.org/wiki/Determinant
 
-  [[nodiscard]] constexpr std::array<T, M * N> ToRowMajor() const { return Transposed().A; }
-
   constexpr bool operator==(const Matrix& other) const { return A == other.A; }
   // operator overloads
 
@@ -151,15 +159,11 @@ struct Matrix {
 
   template<std::size_t R>
   constexpr Matrix<T, M, R> operator*(const Matrix<T, N, R> right) const {
-    const auto rowCount = M;
-    const auto colCount = R;
-
-
     Matrix<T, M, R> result;
 
-    for (std::size_t i{0}; i < rowCount; i++) {
-      for (std::size_t j{0}; j < colCount; j++) {
-        result.A[i * colCount + j] = Vector<T, N>::Dot(Row(i), right.Column(j));
+    for (std::size_t i{0}; i < M; i++) {
+      for (std::size_t j{0}; j < R; j++) {
+        result.A[j * M + i] = Vector<T, N>::Dot(Row(i), right.Column(j));
       }
     }
     return result;
@@ -169,11 +173,9 @@ struct Matrix {
   constexpr Vector<T, M> operator*(const Vector<T, N>& v) const {
     Vector<T, M> result{};
 
-    const std::size_t stride = N;
-
     for (std::size_t row{0}; row < M; row++) {
       for (std::size_t col{0}; col < N; col++) {
-        result[row] += v[col] * A[col + row * stride];
+        result[row] += v[col] * A[col * M + row];
       }
     }
 
@@ -197,8 +199,8 @@ struct Matrix {
     }
     return os;
   }
-  constexpr T& operator()(size_t row, size_t col) { return A[row * N + col]; }
-  constexpr const T& operator()(size_t row, size_t col) const { return A[row * N + col]; }
+  constexpr T& operator()(size_t row, size_t col) { return A[col * M + row]; }
+  constexpr const T& operator()(size_t row, size_t col) const { return A[col * M + row]; }
 
   [[nodiscard]] static constexpr Matrix Identity() {
     Matrix m{};
@@ -224,13 +226,97 @@ struct Matrix {
     T focalLength = T(1) / std::tan(fovY / T(2));
     Matrix m{};
     m(0, 0) = focalLength / aspect;
-    m(1, 1) = -focalLength; // Vulkan Y-down flip
+    m(1, 1) = focalLength;
     m(2, 2) = far / (far - near);
     m(2, 3) = -(far * near) / (far - near);
     m(3, 2) = T(1);
     m(3, 3) = T(0);
     return m;
   }
+
+  //~ Transformations
+  [[nodiscard]] static constexpr Matrix Translation(const Vector<T, 3>& v) {
+    Matrix m = Identity();
+    m(0, 3) = v[0];
+    m(1, 3) = v[1];
+    m(2, 3) = v[2];
+    return m;
+  }
+  [[nodiscard]] static constexpr Matrix RotationX(T angle) {
+    T c = std::cos(angle);
+    T s = std::sin(angle);
+    Matrix m = Identity();
+    m(1, 1) = c;
+    m(1, 2) = -s;
+    m(2, 1) = s;
+    m(2, 2) = c;
+    return m;
+  }
+
+  [[nodiscard]] static constexpr Matrix RotationY(T angle) {
+    T c = std::cos(angle);
+    T s = std::sin(angle);
+    Matrix m = Identity();
+    m(0, 0) = c;
+    m(0, 2) = s;
+    m(2, 0) = -s;
+    m(2, 2) = c;
+    return m;
+  }
+
+  [[nodiscard]] static constexpr Matrix RotationZ(T angle) {
+    T c = std::cos(angle);
+    T s = std::sin(angle);
+    Matrix m = Identity();
+    m(0, 0) = c;
+    m(0, 1) = -s;
+    m(1, 0) = s;
+    m(1, 1) = c;
+    return m;
+  }
+  [[nodiscard]] static constexpr Matrix Scale(const Vector<T, 3>& v) {
+    Matrix m = Identity();
+    m(0, 0) = v[0];
+    m(1, 1) = v[1];
+    m(2, 2) = v[2];
+    return m;
+  }
+  [[nodiscard]] static constexpr Matrix LookAt(const Vector<T, 3>& eye, const Vector<T, 3>& center,
+                                               const Vector<T, 3>& up) {
+    Vector<T, 3> f = center - eye;
+    T len = std::sqrt(f[0]*f[0] + f[1]*f[1] + f[2]*f[2]);
+    f = f * (T(1) / len);
+    Vector<T, 3> s = Vector<T, 3>::Cross(f, up);
+    len = std::sqrt(s[0]*s[0] + s[1]*s[1] + s[2]*s[2]);
+    s = s * (T(1) / len);
+    Vector<T, 3> u = Vector<T, 3>::Cross(s, f);
+
+    Matrix m{};
+    m(0, 0) = s[0];
+    m(0, 1) = s[1];
+    m(0, 2) = s[2];
+    m(1, 0) = u[0];
+    m(1, 1) = u[1];
+    m(1, 2) = u[2];
+    m(2, 0) = -f[0];
+    m(2, 1) = -f[1];
+    m(2, 2) = -f[2];
+    m(0, 3) = -Vector<T, 3>::Dot(s, eye);
+    m(1, 3) = -Vector<T, 3>::Dot(u, eye);
+    m(2, 3) = Vector<T, 3>::Dot(f, eye);
+    return m;
+  }
+  [[nodiscard]] constexpr Matrix ModelMatrix(const Vector<T, 3>& position,
+                                             const Vector<T, 3>& rotation,
+                                             const Vector<T, 3>& scale) const {
+    return Translation(position) * RotationX(rotation[0]) * RotationY(rotation[1]) *
+           RotationZ(rotation[2]) * Scale(scale);
+  }
+
+  // TODO: billboarding
+  // TODO: shear
+  // TODO: inverse/ transpose
+  // TODO: decomposition
 };
 
 template<class T, std::size_t M, std::size_t N>

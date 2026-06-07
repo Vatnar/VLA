@@ -7,11 +7,11 @@
 namespace {
 template<typename T, std::size_t M, std::size_t N>
 constexpr T at_rc(const VLA::Matrix<T, M, N>& A, std::size_t r, std::size_t c) {
-  return A.A[r * N + c];
+  return A.A[c * M + r];
 }
 } // namespace
 
-TEST(MatrixTest, StorageAndViews_RowMajorLinearization) {
+TEST(MatrixTest, StorageAndViews_ColumnMajorLayout) {
   using VLA::Matrix;
   const Matrix<int, 2, 3> a{std::array<int, 6>{1, 2, 3, 4, 5, 6}};
 
@@ -21,8 +21,8 @@ TEST(MatrixTest, StorageAndViews_RowMajorLinearization) {
   EXPECT_EQ(a.A[3], 4);
 
   EXPECT_EQ(at_rc(a, 0, 0), 1);
-  EXPECT_EQ(at_rc(a, 0, 2), 3);
-  EXPECT_EQ(at_rc(a, 1, 0), 4);
+  EXPECT_EQ(at_rc(a, 0, 2), 5);
+  EXPECT_EQ(at_rc(a, 1, 0), 2);
   EXPECT_EQ(at_rc(a, 1, 2), 6);
 }
 
@@ -33,11 +33,11 @@ TEST(MatrixTest, StorageAndViews_RowReturnsExpectedRowVector) {
   const auto r1 = a.Row(1);
 
   EXPECT_EQ(r0[0], 1);
-  EXPECT_EQ(r0[1], 2);
-  EXPECT_EQ(r0[2], 3);
+  EXPECT_EQ(r0[1], 3);
+  EXPECT_EQ(r0[2], 5);
 
-  EXPECT_EQ(r1[0], 4);
-  EXPECT_EQ(r1[1], 5);
+  EXPECT_EQ(r1[0], 2);
+  EXPECT_EQ(r1[1], 4);
   EXPECT_EQ(r1[2], 6);
 }
 
@@ -48,9 +48,9 @@ TEST(MatrixTest, StorageAndViews_ColumnReturnsExpectedColumnVector) {
   const auto c2 = a.Column(2);
 
   EXPECT_EQ(c0[0], 1);
-  EXPECT_EQ(c0[1], 4);
+  EXPECT_EQ(c0[1], 2);
 
-  EXPECT_EQ(c2[0], 3);
+  EXPECT_EQ(c2[0], 5);
   EXPECT_EQ(c2[1], 6);
 }
 
@@ -67,7 +67,7 @@ TEST(MatrixTest, Transpose_2x3MatchesExpected) {
   using VLA::Matrix;
   const Matrix<int, 2, 3> a{std::array<int, 6>{1, 2, 3, 4, 5, 6}};
   const auto at = a.Transposed();
-  const Matrix<int, 3, 2> expected{std::array<int, 6>{1, 4, 2, 5, 3, 6}};
+  const Matrix<int, 3, 2> expected{std::array<int, 6>{1, 3, 5, 2, 4, 6}};
 
   EXPECT_EQ(at.A, expected.A);
 }
@@ -126,7 +126,7 @@ TEST(MatrixTest, MatrixMultiply_Known2x3Times3x2) {
   const Matrix<int, 3, 2> B{std::array<int, 6>{7, 8, 9, 10, 11, 12}};
   const auto C = A * B;
 
-  EXPECT_EQ(C.A, (std::array<int, 4>{58, 64, 139, 154}));
+  EXPECT_EQ(C.A, (std::array<int, 4>{76, 100, 103, 136}));
 }
 
 TEST(MatrixTest, MatrixVectorMultiply_IdentityLeavesVectorUnchanged) {
@@ -149,8 +149,8 @@ TEST(MatrixTest, MatrixVectorMultiply_Known2x3TimesVec3) {
   const Vector<float, 3> v{1.f, 1.f, 1.f};
   const auto out = A * v;
 
-  EXPECT_FLOAT_EQ(out[0], 6.f);
-  EXPECT_FLOAT_EQ(out[1], 15.f);
+  EXPECT_FLOAT_EQ(out[0], 9.f);
+  EXPECT_FLOAT_EQ(out[1], 12.f);
 }
 
 TEST(MatrixTest, Iterators_BeginEndSpanAllElements) {
@@ -250,20 +250,12 @@ TEST(MatrixTest, Transpose_4x4) {
   auto at = a.Transposed();
 
   EXPECT_EQ(at.A[0], 1);
-  EXPECT_EQ(at.A[1], 3);
-  EXPECT_EQ(at.A[2], 5);
-  EXPECT_EQ(at.A[3], 7);
-  EXPECT_EQ(at.A[4], 2);
-  EXPECT_EQ(at.A[5], 4);
-  EXPECT_EQ(at.A[6], 6);
+  EXPECT_EQ(at.A[1], 5);
+  EXPECT_EQ(at.A[2], 2);
+  EXPECT_EQ(at.A[3], 6);
+  EXPECT_EQ(at.A[4], 3);
+  EXPECT_EQ(at.A[5], 7);
+  EXPECT_EQ(at.A[6], 4);
   EXPECT_EQ(at.A[7], 8);
 }
 
-TEST(MatrixTest, ToRowMajor) {
-  using VLA::Matrix;
-  Matrix<int, 2, 3> a{std::array<int, 6>{1, 2, 3, 4, 5, 6}};
-  auto rowMajor = a.ToRowMajor();
-
-  Matrix<int, 3, 2> expected{std::array<int, 6>{1, 4, 2, 5, 3, 6}};
-  EXPECT_EQ(rowMajor, expected.A);
-}
