@@ -20,7 +20,7 @@ namespace VLA {
  */
 template<typename T, std::size_t M, std::size_t N>
 struct Matrix {
-  // STUDY: STD::ARRAY
+  // NOTE: STD::ARRAY is zero overhead over raw C pointers.
   std::array<T, M * N> A;
 
 
@@ -108,8 +108,7 @@ struct Matrix {
   }
 
   [[nodiscard]] constexpr Vector<T, M> Column(const std::size_t index) const& {
-    assert(index < N &&
-           "Column index specified cannot be higher than the amount of columns");
+    assert(index < N && "Column index specified cannot be higher than the amount of columns");
     Vector<T, M> result{};
 
     for (std::size_t i{0}; i < M; i++) {
@@ -284,10 +283,10 @@ struct Matrix {
   [[nodiscard]] static constexpr Matrix LookAt(const Vector<T, 3>& eye, const Vector<T, 3>& center,
                                                const Vector<T, 3>& up) {
     Vector<T, 3> f = center - eye;
-    T len = std::sqrt(f[0]*f[0] + f[1]*f[1] + f[2]*f[2]);
+    T len = std::sqrt(f[0] * f[0] + f[1] * f[1] + f[2] * f[2]);
     f = f * (T(1) / len);
     Vector<T, 3> s = Vector<T, 3>::Cross(f, up);
-    len = std::sqrt(s[0]*s[0] + s[1]*s[1] + s[2]*s[2]);
+    len = std::sqrt(s[0] * s[0] + s[1] * s[1] + s[2] * s[2]);
     s = s * (T(1) / len);
     Vector<T, 3> u = Vector<T, 3>::Cross(s, f);
 
